@@ -286,6 +286,9 @@ static struct curl_slist *http_200_aliases;
 static const char *proxy, *proxy_user, *proxy_password;
 static unsigned proxy_port;
 
+/** HTTPS client certificate */
+static const char *sslcert, *sslkey, *sslca;
+
 static CurlMulti *curl_multi;
 
 static constexpr Domain http_domain("http");
@@ -601,6 +604,10 @@ input_curl_init(const config_param &param, Error &error)
 		proxy_password = config_get_string(CONF_HTTP_PROXY_PASSWORD,
 						   "");
 	}
+
+	sslcert = param.GetBlockValue("ssl_cert");
+	sslkey = param.GetBlockValue("ssl_key");
+	sslca = param.GetBlockValue("ssl_ca");
 
 	CURLM *multi = curl_multi_init();
 	if (multi == nullptr) {
@@ -973,6 +980,13 @@ input_curl_easy_init(struct input_curl *c, Error &error)
 			 proxy_user, proxy_password);
 		curl_easy_setopt(c->easy, CURLOPT_PROXYUSERPWD, proxy_auth_str);
 	}
+
+	if (sslcert != nullptr)
+		curl_easy_setopt(c->easy, CURLOPT_SSLCERT, sslcert);
+	if (sslkey != nullptr)
+		curl_easy_setopt(c->easy, CURLOPT_SSLKEY, sslkey);
+	if (sslca != nullptr)
+		curl_easy_setopt(c->easy, CURLOPT_CAPATH, sslca);
 
 	code = curl_easy_setopt(c->easy, CURLOPT_URL, c->base.uri.c_str());
 	if (code != CURLE_OK) {
